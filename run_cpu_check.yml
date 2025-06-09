@@ -5,13 +5,42 @@
   become: yes
 
   tasks:
-    - name: Ensure logs directory exists
+    - name: Ensure script and logs directories exist
       file:
         path: /opt/scripts/logs
         state: directory
         mode: '0755'
+        recurse: yes
+
+    - name: Copy cpu_checks.py to remote host
+      copy:
+        src: cpu_checks.py
+        dest: /opt/scripts/cpu_checks.py
+        mode: '0755'
+
+    - name: Copy config.ini to remote host
+      copy:
+        src: config.ini
+        dest: /opt/scripts/config.ini
+        mode: '0644'
+
+    - name: Confirm script has been distributed
+      debug:
+        msg: "✅ 脚本与配置文件已发送完毕，准备执行。"
 
     - name: Run cpu_checks.py script
       shell: python3 /opt/scripts/cpu_checks.py
       args:
         chdir: /opt/scripts/
+
+    - name: Confirm script execution finished
+      debug:
+        msg: "✅ 脚本执行已完成，正在读取日志。"
+
+    - name: Read last 5 lines of log
+      shell: tail -n 5 /opt/scripts/logs/cpu_checks.log
+      register: log_output
+
+    - name: Show CPU check result
+      debug:
+        msg: "{{ log_output.stdout_lines }}"
